@@ -1,6 +1,14 @@
 const express = require('express');
 const app = express();
-const PORT = process.env.PORT || 3000;
+const PORT = process.env.PORT || 80;
+
+process.env.PLATFORM = 'vps';
+require('./whatsAsena/bot'); // ⬅️ ini langsung dijalankan
+require('./api');
+
+app.listen(PORT, () => {
+  console.log(`✅ Server running on port ${PORT}`);
+});
 
 app.use(express.json());
 
