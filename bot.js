@@ -158,25 +158,42 @@ ${chalk.blue.italic.bgBlack("ℹ️ Connecting to WhatsApp... Please wait.")}`)
   await groupUnmuteSchuler(conn)
   await customMessageScheduler(conn)
 
-  conn.on("chat-update", (m) => {
-    if (!m.hasNewMessage) return
-    if (!m.messages && !m.count) return
-    const { messages } = m
-    const all = messages.all()
+onn.on("chat-update", (m) => {
+  console.log("📩 chat-update event fired!")
+
+  if (!m.hasNewMessage) return
+  if (!m.messages && !m.count) return
+
+  const { messages } = m
+  const all = messages.all()
+
+  if (all[0]) {
+    console.log("📨 New message received!")
+    console.log(JSON.stringify(all[0], null, 2)) // tampilkan isi pesan
     handleMessages(all[0], conn)
-  })
+  } else {
+    console.log("⚠️ No new message data found.")
+  }
+})
 
   try {
-    await conn.connect()
-  } catch (e) {
-    if (!nodb) {
-      console.log(chalk.red.bold("Eski sürüm stringiniz yenileniyor..."))
-      conn.loadAuthInfo(Session.deCrypt(config.SESSION))
-      try {
-        await conn.connect()
-      } catch (e) {
-        return
-      }
+  await conn.connect()
+  console.log("✅ Connected to WhatsApp successfully!")
+} catch (e) {
+  if (!nodb) {
+    console.log(chalk.red.bold("Eski sürüm stringiniz yenileniyor..."))
+    conn.loadAuthInfo(Session.deCrypt(config.SESSION))
+
+    try {
+      await conn.connect()
+      console.log("✅ Connected to WhatsApp successfully (after reloading session)!")
+    } catch (err) {
+      console.error("❌ Failed to reconnect with old session:", err)
+      return
+    }
+  } else {
+    console.error("❌ Initial connection
+
     } else console.log(`${e.message}`)
   }
 }
