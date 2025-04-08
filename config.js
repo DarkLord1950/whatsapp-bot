@@ -101,4 +101,5 @@ module.exports = {
     process.env.FIND_API_KEY === undefined
       ? "null"
       : process.env.FIND_API_KEY,
+	PLATFORM: process.env.PLATFORM === undefined ? "VPS" : process.env.PLATFORM,
 }
