@@ -1,19 +1,24 @@
-const chalk = require("chalk")
+// File: Utilis/msg.js
 
-async function handleMessages(message, conn) {
-  try {
-    const sender = message.key.remoteJid
-    const text = message.message?.conversation || message.message?.extendedTextMessage?.text || ""
+exports.handleMessages = async (message, conn) => {
+  console.log("✅ handleMessages terpanggil");
 
-    console.log(chalk.yellow(`📥 Pesan dari ${sender}: ${text}`))
+  const sender = message.key.remoteJid;
+  const msg = message.message?.conversation || 
+              message.message?.extendedTextMessage?.text ||
+              message.message?.imageMessage?.caption;
 
-    // Contoh respon otomatis
-    if (text.toLowerCase() === "halo") {
-      await conn.sendMessage(sender, { text: "Halo juga! Ada yang bisa saya bantu?" })
-    }
-  } catch (error) {
-    console.error("❌ Error dalam handleMessages:", error)
+  if (!msg) {
+    console.log("❌ Pesan tidak dikenali atau kosong.");
+    return;
   }
-}
 
-module.exports = { handleMessages }
+  console.log(`📨 Pesan dari ${sender}: ${msg}`);
+
+  try {
+    await conn.sendMessage(sender, { text: `Halo! Bot menerima pesan kamu: "${msg}" 😊` });
+    console.log("✅ Balasan sudah dikirim.");
+  } catch (err) {
+    console.error("🚨 Gagal mengirim balasan:", err);
+  }
+};
