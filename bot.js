@@ -5,6 +5,8 @@ you may not use this file except in compliance with the License.
 
 WhatsAsena - Yusuf Usta
 */
+
+console.log("📦 Bot.js is starting...")
 const fs = require("fs")
 const path = require("path")
 const { handleMessages } = require("./Utilis/msg")
@@ -18,10 +20,9 @@ const { customMessageScheduler } = require("./Utilis/schedule")
 const { prepareGreetingMedia } = require("./Utilis/greetings")
 const { groupMuteSchuler, groupUnmuteSchuler } = require("./Utilis/groupmute")
 const { PluginDB } = require("./plugins/sql/plugin")
-
-// Sql
 const got = require("got")
 const { startMessage, waWebVersion } = require("./Utilis/Misc")
+
 const WhatsAsenaDB = config.DATABASE.define("WhatsAsena", {
   info: {
     type: DataTypes.STRING,
@@ -39,7 +40,6 @@ fs.readdirSync("./plugins/sql/").forEach((plugin) => {
   }
 })
 
-// Yalnızca bir kolaylık. https://stackoverflow.com/questions/4974238/javascript-equivalent-of-pythons-format-function //
 String.prototype.format = function () {
   var i = 0,
     args = arguments
@@ -71,15 +71,14 @@ Array.prototype.remove = function () {
 async function whatsAsena(version) {
   await config.DATABASE.sync()
   let StrSes_Db = await WhatsAsenaDB.findAll({
-    where: {
-      info: "StringSession",
-    },
+    where: { info: "StringSession" },
   })
+
   const conn = new WAConnection()
   conn.version = version
   const Session = new StringSession()
   conn.logger.level = config.DEBUG ? "debug" : "warn"
-  var nodb
+  let nodb = false
 
   if (StrSes_Db.length < 1 || config.CLR_SESSION) {
     nodb = true
@@ -91,18 +90,16 @@ async function whatsAsena(version) {
   conn.on("connecting", () => {
     console.log(`${chalk.red.bgBlack("B")}${chalk.green.bgBlack(
       "o"
-    )}${chalk.blue.bgBlack("t")}${chalk.yellow.bgBlack(
-      "t"
-    )}${chalk.white.bgBlack("u")}${chalk.magenta.bgBlack("s")}
-${chalk.white.bold.bgBlack("Version:")} ${chalk.red.bold.bgBlack(
-      config.VERSION
-    )}
+    )}${chalk.blue.bgBlack("t")}${chalk.yellow.bgBlack("t")}${chalk.white.bgBlack(
+      "u"
+    )}${chalk.magenta.bgBlack("s")}
+${chalk.white.bold.bgBlack("Version:")} ${chalk.red.bold.bgBlack(config.VERSION)}
 ${chalk.blue.italic.bgBlack("ℹ️ Connecting to WhatsApp... Please wait.")}`)
   })
+
   conn.on("open", async () => {
     console.log(chalk.green.bold("✅ Login successful!"))
     console.log(chalk.blueBright.italic("⬇️ Installing external plugins..."))
-    console.log(chalk.blueBright.italic("✅ Login information updated!"))
 
     const authInfo = conn.base64EncodedAuthInfo()
     if (StrSes_Db.length < 1) {
@@ -117,26 +114,19 @@ ${chalk.blue.italic.bgBlack("ℹ️ Connecting to WhatsApp... Please wait.")}`)
     }
 
     let plugins = await PluginDB.findAll()
-    plugins.map(async (plugin) => {
+    for (const plugin of plugins) {
       try {
-        if (!fs.existsSync("./plugins/" + plugin.dataValues.name + ".js")) {
-          console.log(plugin.dataValues.name)
+        if (!fs.existsSync(`./plugins/${plugin.dataValues.name}.js`)) {
           let response = await got(plugin.dataValues.url)
           if (response.statusCode == 200) {
-            fs.writeFileSync(
-              "./plugins/" + plugin.dataValues.name + ".js",
-              response.body
-            )
-            require("./plugins/" + plugin.dataValues.name + ".js")
+            fs.writeFileSync(`./plugins/${plugin.dataValues.name}.js`, response.body)
+            require(`./plugins/${plugin.dataValues.name}.js`)
           }
         }
       } catch (error) {
-        console.log(
-          `failed to load external plugin : ${plugin.dataValues.name}`
-        )
+        console.log(`⚠️ failed to load external plugin: ${plugin.dataValues.name}`)
       }
-    })
-    console.log(chalk.blueBright.italic("⬇️  Installing plugins..."))
+    }
 
     fs.readdirSync("./plugins").forEach((plugin) => {
       if (path.extname(plugin).toLowerCase() == ".js") {
@@ -152,49 +142,49 @@ ${chalk.blue.italic.bgBlack("ℹ️ Connecting to WhatsApp... Please wait.")}`)
       { detectLinks: false }
     )
   })
-  conn.on("close", (e) => console.log(e.reason))
+
+  conn.on("close", (e) => console.log("🚫 Connection closed:", e.reason))
 
   await groupMuteSchuler(conn)
   await groupUnmuteSchuler(conn)
   await customMessageScheduler(conn)
 
-onn.on("chat-update", (m) => {
-  console.log("📩 chat-update event fired!")
+  // ✅ Inilah bagian penting: menangkap pesan masuk
+  conn.on("chat-update", (m) => {
+    console.log("📩 chat-update event fired!")
 
-  if (!m.hasNewMessage) return
-  if (!m.messages && !m.count) return
+    if (!m.hasNewMessage) return
+    if (!m.messages && !m.count) return
 
-  const { messages } = m
-  const all = messages.all()
+    const { messages } = m
+    const all = messages.all()
 
-  if (all[0]) {
-    console.log("📨 New message received!")
-    console.log(JSON.stringify(all[0], null, 2)) // tampilkan isi pesan
-    handleMessages(all[0], conn)
-  } else {
-    console.log("⚠️ No new message data found.")
-  }
-})
+    if (all[0]) {
+      console.log("📨 New message received:")
+      console.log(JSON.stringify(all[0], null, 2))
+      handleMessages(all[0], conn)
+    } else {
+      console.log("⚠️ No message data found.")
+    }
+  })
 
   try {
-  await conn.connect()
-  console.log("✅ Connected to WhatsApp successfully!")
-} catch (e) {
-  if (!nodb) {
-    console.log(chalk.red.bold("Eski sürüm stringiniz yenileniyor..."))
-    conn.loadAuthInfo(Session.deCrypt(config.SESSION))
-
-    try {
-      await conn.connect()
-      console.log("✅ Connected to WhatsApp successfully (after reloading session)!")
-    } catch (err) {
-      console.error("❌ Failed to reconnect with old session:", err)
-      return
+    await conn.connect()
+    console.log("✅ Connected to WhatsApp successfully!")
+  } catch (e) {
+    if (!nodb) {
+      console.log(chalk.red.bold("Eski sürüm stringiniz yenileniyor..."))
+      conn.loadAuthInfo(Session.deCrypt(config.SESSION))
+      try {
+        await conn.connect()
+        console.log("✅ Reconnected with old session!")
+      } catch (err) {
+        console.error("❌ Failed to reconnect:", err)
+        return
+      }
+    } else {
+      console.error("❌ Initial connection failed:", e)
     }
-  } else {
-    console.error("❌ Initial connection
-
-    } else console.log(`${e.message}`)
   }
 }
 
