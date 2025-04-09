@@ -88,11 +88,7 @@ async function whatsAsena(version) {
   }
 
   conn.on("connecting", () => {
-    console.log(`${chalk.red.bgBlack("B")}${chalk.green.bgBlack(
-      "o"
-    )}${chalk.blue.bgBlack("t")}${chalk.yellow.bgBlack("t")}${chalk.white.bgBlack(
-      "u"
-    )}${chalk.magenta.bgBlack("s")}
+    console.log(`${chalk.red.bgBlack("B")}${chalk.green.bgBlack("o")}${chalk.blue.bgBlack("t")}${chalk.yellow.bgBlack("t")}${chalk.white.bgBlack("u")}${chalk.magenta.bgBlack("s")}
 ${chalk.white.bold.bgBlack("Version:")} ${chalk.red.bold.bgBlack(config.VERSION)}
 ${chalk.blue.italic.bgBlack("ℹ️ Connecting to WhatsApp... Please wait.")}`)
   })
@@ -149,22 +145,34 @@ ${chalk.blue.italic.bgBlack("ℹ️ Connecting to WhatsApp... Please wait.")}`)
   await groupUnmuteSchuler(conn)
   await customMessageScheduler(conn)
 
-  // ✅ Inilah bagian penting: menangkap pesan masuk
   conn.on("chat-update", (m) => {
     console.log("📩 chat-update event fired!")
 
-    if (!m.hasNewMessage) return
-    if (!m.messages && !m.count) return
+    if (!m.hasNewMessage) {
+      console.log("⚠️ No new message flag!")
+      return
+    }
+
+    if (!m.messages || !m.count) {
+      console.log("⚠️ No message content or count!")
+      return
+    }
 
     const { messages } = m
     const all = messages.all()
 
-    if (all[0]) {
-      console.log("📨 New message received:")
-      console.log(JSON.stringify(all[0], null, 2))
+    if (all.length === 0) {
+      console.log("⚠️ Message list is empty!")
+      return
+    }
+
+    console.log("📨 New message received:")
+    console.log(JSON.stringify(all[0], null, 2))
+
+    try {
       handleMessages(all[0], conn)
-    } else {
-      console.log("⚠️ No message data found.")
+    } catch (err) {
+      console.log("🚨 Error handling message:", err)
     }
   })
 
