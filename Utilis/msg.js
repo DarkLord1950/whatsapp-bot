@@ -1,20 +1,18 @@
-const { MessageType } = require("@adiwajshing/baileys")
+const chalk = require("chalk")
 
 async function handleMessages(message, conn) {
   try {
-    const from = message.key.remoteJid
-    const msgContent = message.message?.conversation || message.message?.extendedTextMessage?.text
+    const sender = message.key.remoteJid
+    const text = message.message?.conversation || message.message?.extendedTextMessage?.text || ""
 
-    if (!msgContent) return
-
-    console.log(`📩 Pesan dari ${from}: ${msgContent}`)
+    console.log(chalk.yellow(`📥 Pesan dari ${sender}: ${text}`))
 
     // Contoh respon otomatis
-    if (msgContent.toLowerCase() === "halo") {
-      await conn.sendMessage(from, "Hai juga! Ada yang bisa dibantu?", MessageType.text)
+    if (text.toLowerCase() === "halo") {
+      await conn.sendMessage(sender, { text: "Halo juga! Ada yang bisa saya bantu?" })
     }
   } catch (error) {
-    console.error("❌ Error di handleMessages:", error)
+    console.error("❌ Error dalam handleMessages:", error)
   }
 }
 
